@@ -5,6 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 
+from backend.optimizer import (
+    compute_additional_scores,
+    optimize_prompt,
+    set_seed,
+)
+
 app = FastAPI(title="Prompt Optimization Engine API")
 
 # CORS - Allow all origins for now
@@ -24,6 +30,7 @@ class OptimizationRequest(BaseModel):
     num_variations: int
     num_rounds: int
     creativity: float
+    seed: Optional[int] = None
 
 class Variation(BaseModel):
     text: str
@@ -38,6 +45,7 @@ class OptimizationResponse(BaseModel):
     original_scores: Dict[str, int]
     best_prompt: str
     improvements: Dict[str, int]
+    additional_scores: Dict[str, int]
 
 # Scoring Functions
 def score_clarity(text: str) -> int:
@@ -73,38 +81,16 @@ def score_overall(clarity: int, specificity: int) -> int:
     bonus = random.randint(0, 8)
     return min(99, max(30, int(base + bonus)))
 
-def generate_variation(base: str, strategy: str, creativity: float, round_num: int) -> Variation:
-    techniques = []
-    text = base
-    
-    # Evolutionary mutations
-    mutations = [
-        "Be specific and include concrete examples.",
-        "Structure your response with clear sections.",
-        "You are an expert in this field.",
-        "Think step by step and explain your reasoning.",
-        "Keep the response under 500 words."
-    ]
-    
-    # Reinforcement rewrites
-    rewrites = [
-        "Use clear, unambiguous language.",
-        "Break this task into sub-tasks.",
-        "Do NOT include filler words or vague statements."
-    ]
-    
-    if strategy in ["evolutionary", "hybrid"] and random.random() < creativity:
-        mutation = random.choice(mutations)
-        text = f"{base} {mutation}"
-        techniques.append(mutation[:20] + "...")
-    
-    if strategy in ["reinforcement", "hybrid"] and random.random() < creativity:
-        rewrite = random.choice(rewrites)
-        text = f"{base} {rewrite}"
-        techniques.append(rewrite[:20] + "...")
-    
-    if not techniques:
-        techniques = ["Basic optimization"]
+def generate_variation(
+    base: str,
+    strategy: str,
+    use_case: str,
+    creativity: float,
+    round_num: int,
+) -> Variation:
+    result = optimize_prompt(base, strategy, use_case, creativity)
+    techniques = result.techniques or ["Basic optimization"]
+    text = result.text
     
     clarity = score_clarity(text)
     specificity = score_specificity(text)
@@ -140,14 +126,24 @@ async def health():
 @app.post("/api/optimize", response_model=OptimizationResponse)
 async def optimize(request: OptimizationRequest):
     try:
+        if request.seed is not None:
+            set_seed(request.seed)
         all_variations = []
         
         for round_num in range(1, request.num_rounds + 1):
             round_variations = []
-            base = request.prompt if round_num == 1 else (all_variations[-1].text if all_variations else request.prompt)
+            base = request.prompt if round_num == 1 else (
+                all_variations[-1].text if all_variations else request.prompt
+            )
             
             for _ in range(request.num_variations):
-                var = generate_variation(base, request.strategy, request.creativity, round_num)
+                var = generate_variation(
+                    base,
+                    request.strategy,
+                    request.use_case,
+                    request.creativity,
+                    round_num,
+                )
                 round_variations.append(var)
             
             round_variations.sort(key=lambda x: x.overall, reverse=True)
@@ -171,6 +167,8 @@ async def optimize(request: OptimizationRequest):
             best_prompt = request.prompt
             improvements = {"clarity": 0, "specificity": 0, "overall": 0}
         
+        additional_scores = compute_additional_scores(best_prompt)
+
         return OptimizationResponse(
             variations=all_variations,
             original_scores={
@@ -179,7 +177,8 @@ async def optimize(request: OptimizationRequest):
                 "overall": orig_overall
             },
             best_prompt=best_prompt,
-            improvements=improvements
+            improvements=improvements,
+            additional_scores=additional_scores,
         )
         
     except Exception as e:

@@ -5,7 +5,7 @@
 > AI-powered prompt engineering — automatically improve your prompts using evolutionary algorithms, reinforcement learning, and multi-dimensional response scoring. The engine generates, evaluates, and selects the best prompt variations in real-time.
 
 **Built by [Abdullah Shafique](https://www.linkedin.com/in/aadi-abdullah)**  
-AI Engineer · FastAPI · Groq · Evolutionary Algorithms
+AI Engineer · FastAPI · Evolutionary Algorithms
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20App-4f6ef7?style=for-the-badge&logo=vercel)](https://aadi-abdullah.github.io/prompt-optimization-engine/)
 &nbsp;
@@ -59,9 +59,6 @@ User inputs base prompt
 [Fitness Selection]  ──  Best variations selected for next generation
       │
       ▼
-[Groq LLM]          ──  Optional AI-powered prompt improvement
-      │
-      ▼
 [Final Result]      ──  Optimized prompt + improvement metrics
 ```
 
@@ -73,7 +70,8 @@ User inputs base prompt
 - **Reinforcement Learning** — guided rewrites based on quality criteria and constraints
 - **Multi-Dimensional Scoring** — prompts evaluated on clarity, specificity, and overall effectiveness
 - **Iterative Refinement** — multiple optimization rounds for progressive improvement
-- **AI-Powered Generation** — optional Groq LLM integration for intelligent prompt rewriting
+- **Template Library** — built-in presets for email, summary, code, and extraction
+- **Modular Strategies** — templating, regex cleanup, QA-guided rewrites
 - **Real-Time Feedback** — step-by-step progress visualization with status logs
 - **Dark UI with Animations** — professional, responsive design with smooth transitions
 - **Copy to Clipboard** — one-click copy of optimized prompts
@@ -87,7 +85,6 @@ User inputs base prompt
 |---|---|
 | Frontend | HTML5, CSS3, Vanilla JavaScript |
 | Backend | FastAPI, Python 3.11 |
-| LLM | Groq — `mixtral-8x7b-32768` |
 | Optimization | Custom evolutionary algorithms + RL |
 | Scoring | Heuristic-based multi-metric evaluation |
 | Backend Deploy | Railway |
@@ -106,8 +103,12 @@ prompt-optimization-engine/
 │
 ├── backend/
 │   ├── main.py                 # FastAPI app + endpoints
+│   ├── optimizer.py            # Modular optimization strategies
 │   ├── requirements.txt        # Python dependencies
 │   └── runtime.txt             # Python version (3.11)
+│
+├── tests/
+│   └── test_optimizer.py        # Scoring + optimizer tests
 │
 ├── assets/
 │   ├── banner.png
@@ -140,7 +141,6 @@ The project is fully deployed and accessible:
 
 ### Prerequisites
 - Python 3.11+
-- Free API key from [Groq](https://console.groq.com) (optional, works without)
 
 ### Installation
 
@@ -150,16 +150,12 @@ git clone https://github.com/aadi-abdullah/prompt-optimization-engine.git
 cd prompt-optimization-engine
 
 # 2. Backend setup
-cd backend
 python -m venv venv
 source venv/bin/activate      # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
-# 3. Create .env file
-echo "GROQ_API_KEY=your_key_here" > .env
-
-# 4. Run backend
-python main.py
+# 3. Run backend
+python -m backend.main
 
 # 5. In a new terminal, serve frontend from root
 cd ..
@@ -188,7 +184,8 @@ Open **http://localhost:3000**
   "use_case": "general",
   "num_variations": 4,
   "num_rounds": 2,
-  "creativity": 0.7
+  "creativity": 0.7,
+  "seed": 42
 }
 ```
 
@@ -216,6 +213,14 @@ Open **http://localhost:3000**
     "clarity": 27,
     "specificity": 30,
     "overall": 28
+  },
+  "additional_scores": {
+    "length": 70,
+    "tone": 70,
+    "formality": 55,
+    "bias": 70,
+    "fluency": 60,
+    "hallucination_risk": 70
   }
 }
 ```
@@ -252,6 +257,14 @@ Interactive docs available at **/docs** when running locally.
 - Weighted combination: 45% Clarity + 45% Specificity + 10% randomness
 - Higher scores indicate more effective, usable prompts
 
+### Additional Scores (0-100)
+- **Length** — penalize overly short or verbose prompts
+- **Tone** — politeness and urgency balance
+- **Formality** — formal language heuristics
+- **Bias** — absolutist phrasing penalties
+- **Fluency** — repeated word detection
+- **Hallucination Risk** — overconfident phrasing penalties
+
 ---
 
 ## Configuration
@@ -266,19 +279,16 @@ Interactive docs available at **/docs** when running locally.
 
 ---
 
-## Get Free API Keys
+## Free and Open Source
 
-| Service | Free Tier | Link |
-|---|---|---|
-| Groq | Generous daily limits (30 req/min) | [console.groq.com](https://console.groq.com) |
-
-*Note: The engine works without an API key using local techniques. Adding Groq enables AI-powered prompt generation.*
+This project runs without any paid API. All optimization logic is local and
+fully open source under the MIT License.
 
 ---
 
 ## Roadmap
 
-- [ ] Multi-model support (OpenAI, Anthropic, Gemini)
+- [ ] Optional local model support (Hugging Face, llama.cpp)
 - [ ] Custom scoring functions (user-defined criteria)
 - [ ] Prompt templates library
 - [ ] Export optimized prompts to JSON/CSV

@@ -1,5 +1,7 @@
 // API Configuration
-const API_URL = 'https://prompt-optimization-engine.up.railway.app/api';
+const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:8000/api'
+    : 'https://prompt-optimization-engine.up.railway.app/api';
 // DOM Elements
 const promptInput = document.getElementById('promptInput');
 const charCount = document.getElementById('charCount');
